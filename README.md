@@ -9,3 +9,7 @@ A couple of scripts which make it easy to manage a large number of data reports 
 ## reaper-count-edits
 
 A quick-and-dirty utility to count clip edits in Reaper project files. Used for audiobooks where every chapter is a discrete project file, and you want to know how many edits you made in each chapter.
+
+## folder-structures
+
+A couple of AutoHotKey scripts which set up my local project folder structures very quickly and easily. Nothing groundbreaking here, but if you want to save yourself some steps but don't speak enough AutoHotKey to write your own, you can use mine or modify them pretty easily.

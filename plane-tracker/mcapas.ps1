@@ -27,6 +27,7 @@ https://carlssen.co.uk
 
 # changelog
 
+## 0.1.1 bugfix in "0 aircraft found" logic. 6/21/23
 ## 0.1.0 first edition 6/21/23.
 
 #>
@@ -87,23 +88,28 @@ function Get-Aircraft {
 			}
 			
 			$dangerClose = ($ranges | Measure-Object -Minimum).Minimum
+			#Write-Host "dangerClose="$dangerclose
 			#if ($noblink -eq $null) { Write-Host "noblink=null" } else { Write-Host "noblink set!" }
-			if ($dangerClose -lt $dist) {
+			if ($dangerClose -lt $dist -And $dangerClose -ne $null) {
 				Write-Host "Aircraft within audible range." -ForegroundColor Red
 				if ($noblink -eq $null) { Start-Process -NoNewWindow -FilePath "C:\blink1-tool.exe" -ArgumentList "-m 2000 --red -q" }
-			} elseif ($dangerClose -lt $dist*1.5) {
+			} elseif ($dangerClose -lt $dist*1.5 -And $dangerClose -ne $null) {
 				Write-Host "Aircraft within 1.5x radius." -ForegroundColor DarkYellow
 				if (!$noblink) { Start-Process -NoNewWindow -FilePath "C:\blink1-tool.exe" -ArgumentList "-m 2000 --rgb=eb9234 -q" }
-			} elseif ($dangerClose -lt $dist*2) {
+			} elseif ($dangerClose -lt $dist*2 -And $dangerClose -ne $null) {
 				Write-Host "Aircraft within 2x radius." -ForegroundColor Yellow
 				if (!$noblink)  {Start-Process -NoNewWindow -FilePath "C:\blink1-tool.exe" -ArgumentList "-m 2000 --yellow -q" }
-			} elseif ($dangerClose -lt $dist*3) {
+			} elseif ($dangerClose -lt $dist*3 -And $dangerClose -ne $null) {
 				Write-Host "Aircraft within 3x radius." -ForegroundColor Blue
 				if (!$noblink) { Start-Process -NoNewWindow -FilePath "C:\blink1-tool.exe" -ArgumentList "-m 2000 --blue -q" }
 				} else {
-				$inaudible = [math]::Round($dangerClose-$dist,2)
-				Write-Host "Closest aircraft is"$inaudible"nm outside audible danger radius."
-				if (!$noblink) { Start-Process -NoNewWindow -FilePath "C:\blink1-tool.exe" -ArgumentList "-m 2000 --white -q" }
+				if ($dangerClose -ne $null) { 
+					$inaudible = [math]::Round($dangerClose-$dist,2)
+					Write-Host "Closest aircraft is"$inaudible"nm outside audible danger radius."
+					if (!$noblink) { Start-Process -NoNewWindow -FilePath "C:\blink1-tool.exe" -ArgumentList "-m 2000 --white -q" }
+				} else {
+					Write-Host "No aircraft within"$radius" nautical miles."
+				}
 			}
 		}
 	}

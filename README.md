@@ -13,3 +13,6 @@ A quick-and-dirty utility to count clip edits in Reaper project files. Used for 
 ## folder-structures
 
 A couple of AutoHotKey scripts which set up my local project folder structures very quickly and easily. Nothing groundbreaking here, but if you want to save yourself some steps but don't speak enough AutoHotKey to write your own, you can use mine or modify them pretty easily.
+
+## whisper-transcription
+A simple command-line wrapper for [OpenAI's Whisper](https://github.com/openai/whisper) text-to-speech LM, using [regstuff's](https://github.com/regstuff/whisper.cpp_windows) windows binary of Whisper.cpp and [ggerganov's](https://ggml.ggerganov.com/) GGML model files. Faster than realtime audio transcription with output directly to clipboard. Excellent for short files like voicemails, dictated notes, etc.

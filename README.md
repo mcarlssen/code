@@ -16,3 +16,6 @@ A couple of AutoHotKey scripts which set up my local project folder structures v
 
 ## whisper-transcription
 A simple command-line wrapper for [OpenAI's Whisper](https://github.com/openai/whisper) text-to-speech LM, using [regstuff's](https://github.com/regstuff/whisper.cpp_windows) windows binary of Whisper.cpp and [ggerganov's](https://ggml.ggerganov.com/) GGML model files. Faster than realtime audio transcription with output directly to clipboard. Excellent for short files like voicemails, dictated notes, etc.
+
+## blink1-busy-light
+A simple Autohotkey script which triggers a blink(1) device to toggle between RED and OFF states on Ctrl+Shift+1 keypress. Requires blink1-tool. 

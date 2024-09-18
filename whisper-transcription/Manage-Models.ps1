@@ -41,9 +41,15 @@ function Select-Model {
     $existingModels = Get-ChildItem -Path $modelsDirectory -Filter "ggml-model-whisper-*.bin"
 
     if ($existingModels.Count -eq 0) {
-        $(Write-Host "No existing models found." -backgroundcolor red -nonewline) + $(Write-Host " Checking for downloadable models..." -foregroundcolor magenta)
-        Remove-Item settings.ini -Force
+        $(Write-Host "No existing models found.`n" -backgroundcolor red -nonewline) + $(Write-Host " Checking for downloadable models..." -foregroundcolor magenta)
+		if (Test-Path "settings.ini") {
+			Remove-Item "settings.ini" -Force
+			Write-Host "Config found but no models exists on local machine. Removing config." -foregroundcolor magenta
+		} else {
+			Write-Host "'settings.ini' not found, skipping deletion. `n" -foregroundcolor magenta
+		}
         Download-Model
+        Write-Host "`nSelect a new default model: " -ForegroundColor yellow
     } else {
         Write-Host "Select a new default model: " -ForegroundColor yellow
     }
@@ -51,7 +57,7 @@ function Select-Model {
     $existingModels = Get-ChildItem -Path $modelsDirectory -Filter "ggml-model-whisper-*.bin"
 
     # Display the existing models
-    for ($i = 0; $i -lt $existingModels.Count; $i++) {
+	for ($i = 0; $i -lt $existingModels.Count; $i++) {
         Write-Host "$($i + 1). $($existingModels[$i].Name)"
     }
     Write-Host "$($existingModels.Count + 1). Download a new model"

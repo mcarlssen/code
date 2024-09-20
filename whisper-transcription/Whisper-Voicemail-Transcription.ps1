@@ -13,7 +13,7 @@ $whisperModel with the appropriate model name.
 Launch script from a powershell command prompt like so:
 $> .\Whisper-Voicemail-Transcription.ps1
 
-If ffmpeg is not installed, it will be downloaded and installed.
+If ffmpeg and/or 7-Zip are not installed, they will be downloaded and installed.
 
 If you have not selected a default model, you will be prompted to do so; if you have not yet downloaded any transcription models, you will be prompted to
 select one to download from a list of available models. 
@@ -51,6 +51,14 @@ https://carlssen.co.uk
 
 # changelog
 
+## 0.2.2 7-zipperoo 9/20/24
+	*Added auto-install function for 7-Zip binary.*
+	*Added auto-install function for Whisper.cpp binary.*
+
+## 0.2.1 bugfix 9/18/24
+	*Fixed broken error handling in model-download and ffmpeg-install functions.*
+	*Added better console output to clarify user actions required to download or select new models.*
+
 ## 0.2.0 second edition 5/31/24
     *Significant refactor.*
     *Added Whisper.cpp update feature.*
@@ -80,6 +88,12 @@ $global:whisperFolder = Get-ChildItem -Path $scriptDirectory -Directory | Where-
 
 # Downloads and installs FFmpeg if needed
 . ./install-ffmpeg.ps1
+
+# Downloads and installs 7-Zip if needed
+. ./install-7zip.ps1
+
+# Downloads and installs Whisper.cpp if needed
+. ./install-whisper.ps1
 
 # function to run a shell command and return the output
 function Run-Command {
@@ -180,6 +194,31 @@ function Check-FFmpeg {
     }
 }
 
+function Check-7Zip {
+	# Check if 7-Zip is installed by checking if the executable exists
+	$7ZipPath = 'C:\Program Files\7-Zip\7z.exe'
+ 
+    if (Test-Path -Path $7ZipPath) {
+        #Write-Host "7-Zip installed, proceeding..."
+    } else {
+        Write-Host "7-Zip not found, installing..." -backgroundcolor red
+        Install-7Zip
+        return
+    }
+}
+
+function Check-WhisperCPP {
+	# Check if Whisper.cpp 'main.exe' binary is present
+	if ($whisperFolder -and (Test-Path -Path $whisperFolder)) {
+		$WhisperCppPath = Join-Path -Path $whisperFolder -ChildPath "main.exe"
+		#Write-Host "7-Zip installed, proceeding..."
+	} else {
+		Write-Host "Whisper.cpp binary not found, installing..." -backgroundcolor red
+		Install-WhisperCpp
+		return
+	}
+}
+
 switch ($action) {
     "/update" {
         Update-Whisper
@@ -196,7 +235,9 @@ switch ($action) {
     Default {
         #Clear-Host
         Check-Initialization
+		Check-7Zip
         Check-FFmpeg
+		Check-WhisperCPP
         Transcribe
     }
 }

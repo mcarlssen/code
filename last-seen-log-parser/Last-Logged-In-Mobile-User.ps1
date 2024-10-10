@@ -27,6 +27,7 @@ Open that log file in Notepad and search for the MAC address string. Locate the 
 
 # changelog
 
+## 0.1.1 adds timer to output duration of search query
 ## 0.1.0 first edition 5/22/24.
 
 #>
@@ -56,6 +57,9 @@ function Search-MacAddressInFile {
     return $matches
 }
 
+# Start the timer
+$startTime = Get-Date
+
 # Search for the MAC address in each log file
 foreach ($file in $logFiles) {
     $matches = Search-MacAddressInFile -filePath $file.FullName -macAddress $macAddress
@@ -70,6 +74,13 @@ foreach ($file in $logFiles) {
         Write-Host "MAC address not found in file: $($file.FullName)"
     }
 }
+
+# Stop the timer
+$endTime = Get-Date
+
+# Calculate the time taken and output it
+$timeTaken = $endTime - $startTime
+Write-Host "`nTime taken for search: $($timeTaken.TotalSeconds) seconds"
 
 # Require user confirmation before exiting
 Read-Host -Prompt "Press any key to quit"

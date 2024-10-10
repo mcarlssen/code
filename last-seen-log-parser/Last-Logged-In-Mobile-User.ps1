@@ -1,17 +1,13 @@
 <#
 
-# UTILITY TO PARSE G1RT MOBILE ACTIVITY LOGS TO FIND A SUPERMAX LAST-LOGGED-IN-USER
+# UTILITY TO PARSE PLAINTEXT LOGS TO FIND A GIVEN SUBSTRING
 
 When a mobile device is lost or misplaced, customers need to know the Guard1 last-logged-in user on that device. This is stored in a server-side log file:
 
 `C:\ProgramData\TimeKeeping Systems\Guard1 Tracking\<X.xx>\Logs\G1TServer\Active.log` -OR-
 `C:\ProgramData\TimeKeeping Systems\Guard1 Tracking\<X.xx>\Logs\G1TServer\Arc.YYYY-MM-DD.log`
 
-Each log file contains 24 hours of activity, including mobile logs like this:
-
-```2024-04-08 21:58:42.0317 -04:00|10024|INFO|G1tClient|10.0.0.76|G1TMobileApp/8.0.0.33 ANDROID/9-PM85 G1TAPI/14.0|POST /Tks.G1Track.Server/Sys/Trace|{"$type":"G1T.Dc.TraceData, G1T.Dc","Time":"2024-04-08T21:58:46.326598-04:00","Level":3,"Desc":"|Common.PlatformConnectivityService {-222619932}","Data":"|[3fad80968ba34933acbb3895d475f244]|[15]|PublishPlatformConnectivityMessage - OnCapabilitiesChanged  - Wifi (Rssi -66) - Internet - Validated - HasConnectivity: True, WifiIsConnected: True, MobileIsConnected: False|DeviceID:|64:CB:A3:F1:F4:CB [MAC]|User:|tlowery|cc42ff9f-5e98-4f78-a35f-7b1ca2323fa2|gadjjmcr\\tlowery"}
-
-We can parse these logs by MAC address to locate the device in question, and from these entries determine the most recent last-seen date and user logged-in at the time.
+Each log file contains 24 hours of activity. We can parse these logs by MAC address to locate the device in question, and from these entries determine the most recent last-seen date and user logged-in at the time.
 
 ## USAGE
 Copy Last-Logged-In-Mobile-User.ps1 to the ~\Logs\G1TServer folder on the target server. Right-click on the script and select "Run in Powershell", or open a powershell prompt and run the script as so:
@@ -27,60 +23,148 @@ Open that log file in Notepad and search for the MAC address string. Locate the 
 
 # changelog
 
+## 0.2.0 adds option to choose between 5 search modes: LineByLine, SelectString, StreamReader, Parallel, FindStr.
+		 also now supports the -macAddress and -mode switches.
 ## 0.1.1 adds timer to output duration of search query
 ## 0.1.0 first edition 5/22/24.
 
 #>
 
-# Prompt the user to enter the MAC address to search for
-$macAddress = Read-Host "Please enter the MAC address to search for"
+param (
+    [string]$macAddress = $(Read-Host "Please enter the MAC address to search for"),
+    [ValidateSet("LineByLine", "SelectString", "StreamReader", "Parallel", "FindStr")]
+    [string]$mode = $(Read-Host "Please enter mode (LineByLine, SelectString, StreamReader, Parallel, FindStr)")
+)
 
-# Get the current directory
 $currentDir = Get-Location
-
-# Get all text log files in the current directory
 $logFiles = Get-ChildItem -Path $currentDir -Filter *.log
-
-# Function to search for the MAC address in a file
-function Search-MacAddressInFile {
-    param (
-        [string]$filePath,
-        [string]$macAddress
-    )
-    
-    # Read the file content
-    $fileContent = Get-Content -Path $filePath
-    
-    # Search for the MAC address
-    $matches = Select-String -InputObject $fileContent -Pattern $macAddress
-    
-    return $matches
-}
 
 # Start the timer
 $startTime = Get-Date
 
-# Search for the MAC address in each log file
-foreach ($file in $logFiles) {
-    $matches = Search-MacAddressInFile -filePath $file.FullName -macAddress $macAddress
-    
-    # Output the results
-    if ($matches) {
-        Write-Host "MAC address found in file: $($file.FullName)"
-      <#  foreach ($match in $matches) {
-            Write-Host "Line $($match.LineNumber): $($match.Line)"
-        } #>
-    } else {
-        Write-Host "MAC address not found in file: $($file.FullName)"
+# Function to search using Line-by-Line reading
+function Search-LineByLine {
+    foreach ($file in $logFiles) {
+        $filePath = $file.FullName
+        $found = $false
+        
+        Get-Content -Path $filePath -ReadCount 0 | ForEach-Object {
+            if ($_ -match $macAddress) {
+                Write-Host "MAC address found in file: $filePath"
+                $found = $true
+                return
+            }
+        }
+
+        if (-not $found) {
+            Write-Host "MAC address not found in file: $filePath"
+        }
+    }
+}
+
+# Function to search using Select-String
+function Search-SelectString {
+    foreach ($file in $logFiles) {
+        $matches = Select-String -Path $file.FullName -Pattern $macAddress -List
+        
+        if ($matches) {
+            Write-Host "MAC address found in file: $($file.FullName)"
+        } else {
+            Write-Host "MAC address not found in file: $($file.FullName)"
+        }
+    }
+}
+
+# Function to search using .NET StreamReader
+function Search-StreamReader {
+    foreach ($file in $logFiles) {
+        $filePath = $file.FullName
+        $found = $false
+        $reader = [System.IO.StreamReader]::new($filePath)
+        
+        while (($line = $reader.ReadLine()) -ne $null) {
+            if ($line -match $macAddress) {
+                Write-Host "MAC address found in file: $filePath"
+                $found = $true
+                break
+            }
+        }
+        $reader.Close()
+        
+        if (-not $found) {
+            Write-Host "MAC address not found in file: $filePath"
+        }
+    }
+}
+
+# Function to search using PowerShell 7 parallel processing
+function Search-Parallel {
+    $logFiles | ForEach-Object -Parallel {
+        $macAddress = $using:macAddress
+        $filePath = $_.FullName
+        $found = $false
+        $reader = [System.IO.StreamReader]::new($filePath)
+        
+        while (($line = $reader.ReadLine()) -ne $null) {
+            if ($line -match $macAddress) {
+                Write-Host "MAC address found in file: $filePath"
+                $found = $true
+                break
+            }
+        }
+        $reader.Close()
+        
+        if (-not $found) {
+            Write-Host "MAC address not found in file: $filePath"
+        }
+    }
+}
+
+# Function to search using external FindStr
+function Search-FindStr {
+    foreach ($file in $logFiles) {
+        $filePath = $file.FullName
+        $result = cmd.exe /c "findstr /M /C:$macAddress $filePath"
+        
+        if ($result) {
+            Write-Host "MAC address found in file: $filePath"
+        } else {
+            Write-Host "MAC address not found in file: $filePath"
+        }
+    }
+}
+
+# Select the mode and execute
+switch ($mode) {
+    "LineByLine" {
+        Write-Host "Running Line-by-Line file reading..."
+        Search-LineByLine
+    }
+    "SelectString" {
+        Write-Host "Running Select-String optimization..."
+        Search-SelectString
+    }
+    "StreamReader" {
+        Write-Host "Running .NET StreamReader optimization..."
+        Search-StreamReader
+    }
+    "Parallel" {
+        Write-Host "Running Parallel processing optimization (PowerShell 7 required)..."
+        Search-Parallel
+    }
+    "FindStr" {
+        Write-Host "Running external FindStr optimization..."
+        Search-FindStr
+    }
+    default {
+        Write-Host "Invalid mode. Please enter a valid mode: LineByLine, SelectString, StreamReader, Parallel, FindStr"
+        exit
     }
 }
 
 # Stop the timer
 $endTime = Get-Date
-
-# Calculate the time taken and output it
 $timeTaken = $endTime - $startTime
 Write-Host "`nTime taken for search: $($timeTaken.TotalSeconds) seconds"
 
-# Require user confirmation before exiting
 Read-Host -Prompt "Press any key to quit"

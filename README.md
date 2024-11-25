@@ -18,5 +18,8 @@ A simple command-line wrapper for [OpenAI's Whisper](https://github.com/openai/w
 ## blink1-busy-light
 A simple Autohotkey script which triggers a blink(1) device to toggle between RED and OFF states on Ctrl+Shift+1 keypress. Requires blink1-tool. 
 
-## SSMS subscription email-recipient parser
+## SSMS-email-parser
 A small script to convert a raw list of email addresses (in sundry syntaxes) into a semicolon-delimited list that SSMS can accept. Strips commas, brackets, and newlines.
+
+## brother-PTE550W-labels
+Batch-print labels from script. Requires preinstalled printer driver.

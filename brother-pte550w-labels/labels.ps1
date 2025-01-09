@@ -31,60 +31,158 @@ https://carlssen.co.uk
 
 # changelog
 
-## 0.1.0 first edition 11/25/24.
+## 0.2.0 added test mode, serial/customer number input 2025-01-09.
+## 0.1.0 first edition 2024-11-25.
 
 #>
 
-#Classes required for label printing
+Clear-Host
+
+# Classes required for label printing
 Add-Type -AssemblyName System.Drawing
+
+Function GetLabelSettings {
+    Param(
+        [string]$PrintQueue
+    )
+
+    # Create a PrintDocument object to get the printer's paper size
+    $PrintDocument = New-Object System.Drawing.Printing.PrintDocument
+    $PrinterName = [System.Drawing.Printing.PrinterSettings]::InstalledPrinters | Where-Object { $_ -match $PrintQueue } | Select-Object -First 1
+
+    if ($PrinterName -eq $null) {
+        Write-Host "Printer not found. Please check the printer name and try again." -ForegroundColor Red
+        return $null
+    }
+
+    # Assign the printer name to the PrintDocument
+    $PrintDocument.PrinterSettings.PrinterName = $PrinterName
+
+    # Get current paper size
+    $PaperSize = $PrintDocument.DefaultPageSettings.PaperSize.PaperName
+    if ($PaperSize -eq '0.47"') {
+        $FontSize = 18
+        $OffsetY = 5
+    } elseif ($PaperSize -eq '0.35"') {
+        $FontSize = 14
+        $OffsetY = 3
+    } else {
+        Write-Host "Unsupported paper size: $PaperSize" -ForegroundColor Red
+        return $null
+    }
+
+    # Return settings as a hash table
+    return @{
+        PaperSize = $PaperSize
+        FontSize = $FontSize
+        OffsetY  = $OffsetY
+    }
+}
 
 Function PrintLabelBatch {
     Param(
         $PrintQueue,
-        [string[]]$IDs
+        [string[]]$IDs,
+        [switch]$TestMode
     )
 
-    $PrintDocument = New-Object System.Drawing.Printing.PrintDocument
-    $PrinterName = [System.Drawing.Printing.PrinterSettings]::InstalledPrinters | Where-Object {$_ -match $PrintQueue} | Select-Object -First 1
-
-    if ($PrinterName -eq $null) {
-        Write-Host "Printer not found. Please check the printer name and try again."
+    # Get label settings
+    $Settings = GetLabelSettings -PrintQueue $PrintQueue
+    if ($Settings -eq $null) {
+        Write-Host "Failed to retrieve label settings. Exiting." -ForegroundColor Red
         return
     }
 
-    $PrintDocument.PrinterSettings.PrinterName = $PrinterName
-    $PrintDocument.DefaultPageSettings.PaperSize = $PrintDocument.PrinterSettings.PaperSizes | Where-Object { $_.PaperName -eq '0.47"' }
-    $PrintDocument.DefaultPageSettings.Landscape = $true
+    # Extract settings for use
+    $PaperSize = $Settings.PaperSize
+    $FontSize = $Settings.FontSize
+    $OffsetY = $Settings.OffsetY
 
-    # Loop through each ID in the list
+    # Display settings
+    Write-Host "`nPaper Size: $PaperSize" -ForegroundColor Cyan
+    Write-Host "Font Size: $FontSize" -ForegroundColor Cyan
+    Write-Host "Offset: 0,$OffsetY" -ForegroundColor Cyan
+
+    # If in test mode, output details and return
+    if ($TestMode) {
+        Write-Host "`nTEST MODE: No labels will be printed." -ForegroundColor Yellow
+        Write-Host "Labels to be printed:" -ForegroundColor Green
+        $IDs | ForEach-Object { Write-Host $_ }
+        return
+    }
+
+    # Proceed with printing
+    $PrintDocument = New-Object System.Drawing.Printing.PrintDocument
+    $PrintDocument.PrinterSettings.PrinterName = [System.Drawing.Printing.PrinterSettings]::InstalledPrinters | Where-Object { $_ -match $PrintQueue } | Select-Object -First 1
+
     foreach ($ID in $IDs) {
         $PrintDocument.DocumentName = "Label - SuperMAX"
         $PrintDocument.add_PrintPage({
-            # Create font and colors for text and background
-            $TextFont = [System.Drawing.Font]::new('Letter Gothic Std Bold', 18, [System.Drawing.FontStyle]::Regular)
+            # Create font and draw the string
+            $TextFont = [System.Drawing.Font]::new('Letter Gothic Std Bold', $FontSize, [System.Drawing.FontStyle]::Regular)
             $BrushFG = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(255,0,0,0))
-
-            # Get the page width in pixels
-            $PageWidth = [Math]::floor(($_.PageSettings.PrintableArea.Width / 100) * $_.PageSettings.PrinterResolution.X)
-
-            # Measure the string before drawing it on the document
-            $StringSize = $_.Graphics.MeasureString($ID, $TextFont)
-            Write-Host "String width:", $StringSize.Width
-            Write-Host "Page width:", $PageWidth
-
-            # Draw the string on the document
-            $_.Graphics.DrawString($ID, $TextFont, $BrushFG, 0, 5)    
+            $_.Graphics.DrawString($ID, $TextFont, $BrushFG, 0, $OffsetY)
         })
-
-        # Print the document
         $PrintDocument.Print()
     }
 
-    Write-Host "All labels have been sent to the printer."
+    Write-Host "All labels have been sent to the printer." -ForegroundColor Green
 }
 
-# List of IDs to print
-$LabelList = @("GAN000-2A0466","GAN000-2A0467","GAN000-2A0468","GAN000-2A0061","GAN000-2A0388","GAN000-2A0369","GAN000-2A0387","GAN000-2A0368") # Add up to 30 IDs here
+Function GenerateLabelList {
+    # Prompt for customer code
+    $CustomerCode = Read-Host "What is the customer code?"
 
-# Call the function with your printer name and list of IDs
-PrintLabelBatch -PrintQueue "Brother PT-E550W" -IDs $LabelList
+    # Prompt for serial numbers (multi-line input)
+    Write-Host "Input serial numbers, one per line (press Enter twice to finish):" -ForegroundColor Cyan
+    $Serials = @()
+    while ($true) {
+        $Input = Read-Host
+        if ([string]::IsNullOrWhiteSpace($Input)) { break }
+        $Serials += $Input
+    }
+
+    # Generate the label list
+    $LabelList = $Serials | ForEach-Object { "$CustomerCode-$($_.Substring($_.Length - 6))" }
+    return $LabelList
+}
+
+# Main routine
+Write-Host "Welcome to the Brother PT-E550W Batch Label Printing Script" -ForegroundColor Cyan
+$UseDynamicList = Read-Host "Do you want to generate a label list dynamically? (yes/no)"
+if ($UseDynamicList -eq "yes") {
+    $LabelList = GenerateLabelList
+} else {
+    # Hardcoded label list
+    Write-Host "Printing hardcoded label list."
+    $LabelList = @(
+        "GRA006-0A0400", "GRA006-0A0373", "GRA006-0A0433", "GRA006-0A0377", "GRA006-0A0430", "GRA006-0A0378",
+        "GRA006-0A0401", "GRA006-0A0408", "GRA006-0A0374", "GRA006-0A0403", "GRA006-0A0211", "GRA006-0A0314"
+    )
+}
+
+# Retrieve label settings for confirmation
+$Settings = GetLabelSettings -PrintQueue "Brother PT-E550W"
+if ($Settings -eq $null) {
+    Write-Host "Failed to retrieve label settings. Exiting." -ForegroundColor Red
+    exit
+}
+$PaperSize = $Settings.PaperSize
+$FontSize = $Settings.FontSize
+$OffsetY = $Settings.OffsetY
+
+# Test mode confirmation
+$TestMode = Read-Host "Enable test mode? (yes/no)" -eq "yes"
+
+# Confirm print job
+Write-Host "`nLabels to print:" -ForegroundColor Green
+$LabelList | ForEach-Object { Write-Host $_ }
+Write-Host "`nPaper Size: $PaperSize" -ForegroundColor Cyan
+Write-Host "Font Size: $FontSize" -ForegroundColor Cyan
+Write-Host "Offset: 0,$OffsetY" -ForegroundColor Cyan
+$Proceed = Read-Host "Proceed with printing? (yes/no)"
+if ($Proceed -eq "yes") {
+    PrintLabelBatch -PrintQueue "Brother PT-E550W" -IDs $LabelList -TestMode:$TestMode
+} else {
+    Write-Host "Print job canceled." -ForegroundColor Yellow
+}

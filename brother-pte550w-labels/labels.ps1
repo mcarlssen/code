@@ -31,6 +31,7 @@ https://carlssen.co.uk
 
 # changelog
 
+## 0.2.1 bugfix - resolve input validation error in "test mode?" question
 ## 0.2.0 added test mode, serial/customer number input 2025-01-09.
 ## 0.1.0 first edition 2024-11-25.
 
@@ -171,8 +172,21 @@ $PaperSize = $Settings.PaperSize
 $FontSize = $Settings.FontSize
 $OffsetY = $Settings.OffsetY
 
-# Test mode confirmation
-$TestMode = Read-Host "Enable test mode? (yes/no)" -eq "yes"
+function Get-YesNoResponse {
+    Param(
+        [string]$Prompt
+    )
+    while ($true) {
+        $Response = Read-Host $Prompt
+        if ($Response -match "^(yes|y|no|n)$") {
+            return ($Response -match "^(yes|y)$") # Returns $true for "yes" or "y", and $false for "no" or "n"
+        }
+        Write-Host "Invalid input. Please enter 'yes' or 'no' (or 'y' / 'n')." -ForegroundColor Yellow
+    }
+}
+
+# Usage in main routine
+$TestMode = Get-YesNoResponse "Enable test mode? (yes/no)"
 
 # Confirm print job
 Write-Host "`nLabels to print:" -ForegroundColor Green
@@ -180,9 +194,11 @@ $LabelList | ForEach-Object { Write-Host $_ }
 Write-Host "`nPaper Size: $PaperSize" -ForegroundColor Cyan
 Write-Host "Font Size: $FontSize" -ForegroundColor Cyan
 Write-Host "Offset: 0,$OffsetY" -ForegroundColor Cyan
-$Proceed = Read-Host "Proceed with printing? (yes/no)"
-if ($Proceed -eq "yes") {
-    PrintLabelBatch -PrintQueue "Brother PT-E550W" -IDs $LabelList -TestMode:$TestMode
+
+$Proceed = Get-YesNoResponse "Proceed with printing? (yes/no)"
+
+if ($Proceed) {
+    PrintLabelBatch -PrintQueue "Brother PT-E550W" -IDs $LabelList -TestMode:([switch]$TestMode)
 } else {
     Write-Host "Print job canceled." -ForegroundColor Yellow
 }

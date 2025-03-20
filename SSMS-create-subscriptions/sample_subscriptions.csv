@@ -1,0 +1,6 @@
+ReportConfigId,ServerId,ReportType,Description,EmailTo,EmailCC,EmailReplyTo,RenderFormat,EmailSubject,IncludeReport,EmailPriority,ScheduleType,ScheduleTime,ScheduleDaysOfWeek,ScheduleDayOfMonth,ScheduleInterval
+055beca7-9b96-4c53-b58f-48afb8ee6109,TKS017_26790,Wellbeing,Daily WellBeing Report,user1@company.com,manager@company.com,noreply@company.com,PDF,Daily WellBeing Report,true,NORMAL,Daily,08:00,,,1
+16fde438-2b4e-4a67-9f3d-c853dd73771c,TKS017_26790,Wellbeing,Monthly Sales Report,sales@company.com,finance@company.com,noreply@company.com,EXCELOPENXML,Monthly Sales Report,true,HIGH,Weekly,07:00,Monday,,4
+a7c91234-5678-4def-b987-123456789abc,TKS017_26790,Wellbeing,Weekly Inventory Status,inventory@company.com,,noreply@company.com,PDF,Weekly Inventory Report,true,NORMAL,Weekly,09:00,Monday;Wednesday;Friday,,1
+b8d45678-90ab-4cde-f123-456789abcdef,TKS017_26790,ConditionActivity,Quarterly Financial Report,finance@company.com,ceo@company.com,noreply@company.com,WORDOPENXML,Q1 Financial Report,true,HIGH,Weekly,10:00,Monday,,12
+c9e78901-2345-6789-abcd-ef0123456789,TKS017_26790,Inspection,Daily Performance Metrics,team@company.com,leads@company.com,noreply@company.com,PDF,Performance Report,true,NORMAL,Weekly,06:00,Monday;Tuesday;Wednesday;Thursday;Friday;Saturday;Sunday,,1 

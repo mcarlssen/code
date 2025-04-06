@@ -23,3 +23,6 @@ A small script to convert a raw list of email addresses (in sundry syntaxes) int
 
 ## brother-PTE550W-labels
 Batch-print labels from script. Requires preinstalled printer driver.
+
+## SSMS-create-subscriptions
+A bulk-import script that creates SQL Report Services subscriptions from a CSV list.

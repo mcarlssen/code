@@ -37,8 +37,8 @@ function Select-Model {
         New-Item -Path $modelsDirectory -ItemType Directory -Force
     }
     
-    # Get the list of existing models
-    $existingModels = Get-ChildItem -Path $modelsDirectory -Filter "ggml-model-whisper-*.bin"
+    # Get the list of existing models (updated to match new naming convention)
+    $existingModels = Get-ChildItem -Path $modelsDirectory -Filter "ggml-*.bin"
 
     if ($existingModels.Count -eq 0) {
         $(Write-Host "No existing models found.`n" -backgroundcolor red -nonewline) + $(Write-Host " Checking for downloadable models..." -foregroundcolor magenta)
@@ -54,7 +54,7 @@ function Select-Model {
         Write-Host "Select a new default model: " -ForegroundColor yellow
     }
     #this is repeated because if you have a default model set, but the file doesn't exist, it doesn't become available to select after downloading if the models aren't re-scanned first
-    $existingModels = Get-ChildItem -Path $modelsDirectory -Filter "ggml-model-whisper-*.bin"
+    $existingModels = Get-ChildItem -Path $modelsDirectory -Filter "ggml-*.bin"
 
     # Display the existing models
 	for ($i = 0; $i -lt $existingModels.Count; $i++) {

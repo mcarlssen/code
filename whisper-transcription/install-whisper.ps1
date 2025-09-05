@@ -15,7 +15,7 @@ function Install-WhisperCpp {
         # Define the destination path (where the script is being run from)
         $zipFileName = Split-Path -Leaf $zipFileUrl
         $subfolderName = [System.IO.Path]::GetFileNameWithoutExtension($zipFileName)
-        $subfolderPath = Join-Path -Path $PSScriptRoot -ChildPath $subfolderName
+        $subfolderPath = Join-Path -Path "C:\ProgramData\WhisperTranscription" -ChildPath $subfolderName
 
         # Create the subfolder if it doesn't exist
         if (-not (Test-Path -Path $subfolderPath)) {

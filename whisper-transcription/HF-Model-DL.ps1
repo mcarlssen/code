@@ -1,23 +1,64 @@
-# this domain may cease to host files in future. Should update to use the HuggingFace repo eventually. https://huggingface.co/ggerganov
-$remoteUri = 'https://ggml.ggerganov.com/'
-
-# Function to parse the HTML content and extract filenames
+# Updated to use direct model URLs from HuggingFace repository
+# Function to get available models with direct download URLs
 function Get-RemoteFiles {
-    # Retrieve the HTML content of the web page
-    $response = Invoke-WebRequest -Uri $remoteUri
-
-    # Parse the HTML to extract file links
-    $fileLinks = $response.Links | Where-Object { $_.href -match "^ggml-model-whisper-.{4,5}\.bin$" }
-
-    # Create a custom object to store the file name and download URL
-    $files = @()
-    foreach ($link in $fileLinks) {
-        $file = New-Object PSObject -Property @{
-            Name = [System.IO.Path]::GetFileName($link.href)
-            DownloadUrl = [System.Uri]::new($response.BaseResponse.ResponseUri, $link.href).AbsoluteUri
+    # Define available models with direct download URLs from https://huggingface.co/ggerganov/whisper.cpp/tree/main
+    $files = @(
+        @{
+            Name = "ggml-tiny.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin"
+            Size = "77.7 MB"
+        },
+        @{
+            Name = "ggml-tiny.en.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin"
+            Size = "77.7 MB"
+        },
+        @{
+            Name = "ggml-base.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin"
+            Size = "148 MB"
+        },
+        @{
+            Name = "ggml-base.en.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
+            Size = "148 MB"
+        },
+        @{
+            Name = "ggml-small.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+            Size = "488 MB"
+        },
+        @{
+            Name = "ggml-small.en.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin"
+            Size = "488 MB"
+        },
+        @{
+            Name = "ggml-medium.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin"
+            Size = "1.53 GB"
+        },
+        @{
+            Name = "ggml-medium.en.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin"
+            Size = "1.53 GB"
+        },
+        @{
+            Name = "ggml-large-v2.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v2.bin"
+            Size = "3.09 GB"
+        },
+        @{
+            Name = "ggml-large-v3.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin"
+            Size = "3.1 GB"
+        },
+        @{
+            Name = "ggml-large-v3-turbo.bin"
+            DownloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin"
+            Size = "1.62 GB"
         }
-        $files += $file
-    }
+    )
 
     return $files
 }
@@ -33,10 +74,11 @@ function Select-RemoteFile {
     }
 
 
-    # Display the files in an ordered list
+    # Display the files in an ordered list with sizes
     Write-Host "Models available:" -foregroundcolor yellow
     for ($i = 0; $i -lt $files.Count; $i++) {
-        Write-Host "$($i + 1). $($files[$i].name)"
+        $size = if ($files[$i].Size) { " ($($files[$i].Size))" } else { "" }
+        Write-Host "$($i + 1). $($files[$i].name)$size"
     }
 
     # Ask user to select a model
@@ -80,10 +122,10 @@ function Download-File {
 }
 
 # Main script logic
-# Ensure the models directory exists
-$modelsDirectory = Join-Path -Path "." -ChildPath "models"
+# Ensure the models directory exists in ProgramData
+$modelsDirectory = "C:\ProgramData\WhisperTranscription\models"
 if (-not (Test-Path -Path $modelsDirectory)) {
-    New-Item -Path $modelsDirectory -ItemType Directory
+    New-Item -Path $modelsDirectory -ItemType Directory -Force
 }
 
 function Download-Model {
